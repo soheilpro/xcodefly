@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+
+function start {
+  shift
+  SIZE=${1:-4194304}
+  DISK=$(hdid -nomount ram://$SIZE)
+  N=${DISK:9}
+
+  newfs_hfs -v DerivedData /dev/rdisk$N
+  diskutil mount -mountPoint ~/Library/Developer/Xcode/DerivedData /dev/disk$N
+}
+
+function stop {
+  diskutil unmount ~/Library/Developer/Xcode/DerivedData
+}
+
+function install {
+  SCRIPTPATH=$0
+
+  shift
+  for ARG in "$@"
+  do
+      PROGRAMARGUMENTS=$PROGRAMARGUMENTS"<string>$ARG</string>"
+  done
+
+  echo "<?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+          <key>Label</key>
+          <string>com.soheilrashidi.xcodefly</string>
+          <key>ProgramArguments</key>
+            <array>
+              <string>$SCRIPTPATH</string>
+              <string>start</string>
+              $PROGRAMARGUMENTS
+            </array>
+          <key>RunAtLoad</key>
+          <true/>
+        </dict>
+        </plist>" > ~/Library/LaunchAgents/com.soheilrashidi.xcodefly.plist
+}
+
+function uninstall {
+  rm ~/Library/LaunchAgents/com.soheilrashidi.xcodefly.plist
+}
+
+case "$1" in
+  start)
+    start $@
+    ;;
+
+  stop)
+    stop $@
+    ;;
+
+  install)
+    install $@
+    ;;
+
+  uninstall)
+    uninstall $@
+    ;;
+
+  *)
+    echo "Usage: xcodefly start [size]"
+    echo "       xcodefly stop"
+    echo "       xcodefly install [size]"
+    echo "       xcodefly uninstall"
+    exit 1
+esac
